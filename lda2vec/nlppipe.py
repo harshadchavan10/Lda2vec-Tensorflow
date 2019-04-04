@@ -38,9 +38,8 @@ class Preprocessor:
         self.min_count = min_count
 
         # Here we disable parts of spacy's pipeline - REALLY improves speed.
-        self.nlp = spacy.load(nlp, disable = ['ner', 'parser'])
-        self.nlp.vocab.add_flag(lambda s: s.lower() in spacy.lang.en.stop_words.STOP_WORDS,
-                                                       spacy.attrs.IS_STOP)
+        self.nlp = spacy.load(nlp, disable = ['ner', 'tagger', 'parser'])
+
 
     def clean(self, line):
         return ' '.join(w for w in line.split() if not any(t in w for t in self.bad))
@@ -61,35 +60,29 @@ class Preprocessor:
 
         print("\n---------- Tokenizing Texts ----------")
         # Iterate over all uncleaned documents
-        for i, doc in tqdm(enumerate(self.nlp.pipe(texts, n_threads=4))):
+        for i, doc in tqdm(enumerate(self.nlp.pipe(texts, n_threads=2))):
             # Variable for holding cleaned tokens (to be joined later)
             doc_texts = []
             for token in doc:
-                # Some options for you - TODO pass attrs dictionary
-                #if not token.like_email and not token.like_url and not token.is_punct and not token.like_num and token.is_alpha:
-                if token.is_alpha and not token.is_stop:
+                if not token.like_email and not token.like_url and not token.is_punct:
                     if self.token_type == "lemma":
-                        if token.lemma_ == "-PRON-":
-                            doc_texts.append(token.lower_)
-                        else:
-                            doc_texts.append(token.lemma_)
+                        doc_texts.append(token.lemma_)
                     elif self.token_type=="lower":
                         doc_texts.append(token.lower_)
                     else:
                         doc_texts.append(token.text)
             self.texts_clean.append(" ".join(doc_texts))
 
+        del texts
+
         # Init a tokenizer and fit it with our cleaned texts
         self.tokenizer = Tokenizer(self.max_features, filters="", lower=False)
         self.tokenizer.fit_on_texts(self.texts_clean)
-        self.tokenizer.word_index["<UNK>"] = 0
-        self.tokenizer.word_docs["<UNK>"] = 0
-        self.tokenizer.word_counts["<UNK>"] = 0
 
         # This chunk handles removing words with counts less than min_count
         if self.min_count != None:
             # Get all the words to remove
-            words_to_rm = [w for w,c in self.tokenizer.word_counts.items() if c < self.min_count and w != "<UNK>"]
+            words_to_rm = [w for w,c in self.tokenizer.word_counts.items() if c < self.min_count or not str(w).isalpha()]
             print("Removing {0} low frequency tokens out of {1} total tokens".format(len(words_to_rm), len(self.tokenizer.word_counts)))
             # Iterate over those words and remove them from the necessary Tokenizer attributes
             for w in words_to_rm:
@@ -107,10 +100,10 @@ class Preprocessor:
 
     def get_supplemental_data(self):
 
-        # Get idx to word from keras tokenizer
+        # Get word to idx from keras tokenizer
         self.word_to_idx = self.tokenizer.word_index
 
-        # Flip idx to word to get word_to_idx
+        # Flip word to idx to get idx to word
         self.idx_to_word = {v: k for k, v in self.word_to_idx.items()}
 
         # Vocab size should be at most max_features, but will default to len(word_index) if less than that
@@ -118,23 +111,23 @@ class Preprocessor:
 
         # Init empty list to hold frequencies
         self.freqs = []
-        for i in range(self.vocab_size):
+        for i in range(1, self.vocab_size+1):
             token = self.idx_to_word[i]
             self.freqs.append(self.tokenizer.word_counts[token])
     
     def load_glove(self, EMBEDDING_FILE):
-        def get_coefs(word,*arr): return word, np.asarray(arr, dtype='float32')
+        def get_coefs(word,*arr): return word, np.asarray(arr, dtype='float32')                                                                                                                                                                                                                                                                                                                                                                             
         embeddings_index = dict(get_coefs(*o.split(" ")) for o in open(EMBEDDING_FILE))
 
         all_embs = np.stack(embeddings_index.values())
         emb_mean,emb_std = all_embs.mean(), all_embs.std()
         embed_size = all_embs.shape[1]
 
-        # word_index = tokenizer.word_index
-        nb_words = self.vocab_size
+        # word_index = tokenizer.word_index                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
+        nb_words = self.vocab_size + 1
         embedding_matrix = np.random.normal(emb_mean, emb_std, (nb_words, embed_size))
         for word, i in self.word_to_idx.items():
-            if i >= nb_words: continue
+            if i > self.vocab_size: continue
             embedding_vector = embeddings_index.get(word)
             if embedding_vector is not None: embedding_matrix[i] = embedding_vector
                 
@@ -225,6 +218,7 @@ class Preprocessor:
         self.tokenize_and_process()
         self.get_supplemental_data()
         self.get_skipgrams()
+        del self.tokenizer
 
     def save_data(self, path, embedding_matrix=None):
         """Save all the preprocessed data to a given path. Optionally, you can
@@ -243,7 +237,7 @@ class Preprocessor:
 
         # If embedding matrix is passed, save it as long as embedding_matrix.shape[0] == self.vocab_size
         if isinstance(embedding_matrix, type(np.empty(0))):
-            assert embedding_matrix.shape[0] == self.vocab_size, "embedding_matrix.shape[0] should match vocab_size - {0} != {1}".format(embedding_matrix.shape[0], self.vocab_size)
+            assert embedding_matrix.shape[0] == self.vocab_size + 1, "embedding_matrix.shape[0] should match vocab_size - {0} != {1}".format(embedding_matrix.shape[0], self.vocab_size)
             np.save(path+"/embedding_matrix", embedding_matrix)
         else:
             assert embedding_matrix==None, "If you want to save embeddings, they should should be type numpy.ndarray, not {}".format(type(embedding_matrix))

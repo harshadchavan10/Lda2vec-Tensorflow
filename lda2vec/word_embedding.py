@@ -8,6 +8,7 @@ class Word_Embedding():
         self.sample_size = sample_size
         self.power = power
         self.freqs = freqs
+        print(self.vocab_size)
 
         self.embedding = tf.Variable(tf.random_uniform([vocab_size, embedding_size],-1.0, 1.0),
                            name="word_embedding") if W_in is None else W_in
@@ -17,6 +18,7 @@ class Word_Embedding():
                                                            stddev=tf.sqrt(1 / embedding_size)),
                                                            name="nce_weights") if nce_w_in is None else nce_w_in
         self.nce_biases = tf.Variable(tf.zeros([vocab_size]), name="nce_biases") if nce_b_in is None else nce_b_in
+        print(self.nce_weights.shape)
 
     def __call__(self, embed, train_labels):
         with tf.name_scope("negative_sampling"):
@@ -26,6 +28,7 @@ class Word_Embedding():
             if self.freqs:
                 sampler = tf.nn.fixed_unigram_candidate_sampler(train_labels,
                                                                 num_true=1,
+                                                                num_reserved_ids=1,
                                                                 num_sampled=self.sample_size,
                                                                 unique=True,
                                                                 range_max=self.vocab_size,

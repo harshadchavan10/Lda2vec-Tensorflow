@@ -58,20 +58,19 @@ class Lda2vec:
         self.factors_in = factors_in
         self.compute_normed = False
         self.fixed_words = fixed_words
-
+        self.logdir = logdir
 
         if not restore:
             self.date = datetime.now().strftime('%y%m%d_%H%M')
-            self.logdir = ('{}_{}').format(self.logdir, self.date)
 
             # Load pretrained embeddings if provided.
-            if isinstance(pretrained_embeddings, np.ndarray):
-                W_in = tf.constant(pretrained_embeddings, name="word_embedding") if fixed_words else tf.get_variable("word_embedding", shape=[self.vocab_size,self.embedding_size], initializer=tf.constant_initializer(pretrained_embeddings))
-            else:
-                W_in = None
+            if type(pretrained_embeddings) !=None:
+                W_in = tf.constant(pretrained_embeddings, name="word_embedding", dtype="float32") if fixed_words else tf.get_variable("word_embedding", shape=[self.vocab_size+1,self.embedding_size], initializer=tf.constant_initializer(pretrained_embeddings))
+
+            print(W_in.shape)
 
             # Initialize the word embedding
-            self.w_embed = W.Word_Embedding(self.embedding_size, self.vocab_size, self.num_sampled,
+            self.w_embed = W.Word_Embedding(self.embedding_size, self.vocab_size+1, self.num_sampled,
                                             W_in=W_in, freqs=self.freqs,
                                             power=self.power)
             # Initialize the Topic-Document Mixture
@@ -100,7 +99,7 @@ class Lda2vec:
             self.optimizer, self.merged) = handles
 
         else:
-            meta_graph = logdir + '/model.ckpt'
+            meta_graph = self.logdir + '/model.ckpt'
             tf.train.import_meta_graph(meta_graph + '.meta').restore(self.sesh, meta_graph)
             handles = self.sesh.graph.get_collection(Lda2vec.RESTORE_KEY)
 
@@ -110,7 +109,7 @@ class Lda2vec:
             self.optimizer, self.merged, embedding, nce_weights, nce_biases,
             doc_embedding, topic_embedding) = handles
 
-            self.w_embed = W.Word_Embedding(self.embedding_size, self.vocab_size, self.num_sampled,
+            self.w_embed = W.Word_Embedding(self.embedding_size, self.vocab_size+1, self.num_sampled,
                                             W_in=embedding, freqs=self.freqs,
                                             power=self.power,
                                             nce_w_in=nce_weights,
@@ -232,6 +231,7 @@ class Lda2vec:
         # Iterate over the number of epochs we want to train for
         for e in range(num_epochs):
             print('\nEPOCH:', e + 1)
+            print("Started: {}".format(str(datetime.now())))
             # Get a batch worth of data
             for p, t, d in utils.chunks(self.batch_size, pivot_words, target_words, doc_ids):
                 
@@ -261,6 +261,8 @@ class Lda2vec:
             if e>0 and (e+1)%print_topics_every==0:
                 idxs = np.arange(self.num_topics)
                 words, sims = self.get_k_closest(idxs, in_type='topic', idx_to_word=idx_to_word, k=10, verbose=True)
+
+            print("Ended: {}".format(str(datetime.now())))
 
         # Save after all epochs are finished, but only if we didn't just save
         if self.save_graph_def and (e+1) % save_every != 0:

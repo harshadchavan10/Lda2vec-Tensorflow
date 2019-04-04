@@ -64,7 +64,7 @@ def prepare_topics(weights, factors, word_vectors, vocab, temperature=1.0,
     # Map each factor vector to a word
     topic_to_word = []
     msg = "Vocabulary size did not match size of word vectors"
-    assert len(vocab) == word_vectors.shape[0], msg
+    assert len(vocab)+1 == word_vectors.shape[0], msg
     if normalize:
         word_vectors /= np.linalg.norm(word_vectors, axis=1)[:, None]
     # factors = factors / np.linalg.norm(factors, axis=1)[:, None]
@@ -83,7 +83,10 @@ def prepare_topics(weights, factors, word_vectors, vocab, temperature=1.0,
             'doc_topic_dists': doc_to_topic,
             'doc_lengths': doc_lengths,
             'vocab': vocab,
-            'term_frequency': term_frequency}
+            'term_frequency': term_frequency,
+            'doc_vectors': np.array(weights),
+            'topic_vectors': np.array(factors),
+            'word_vectors': np.array(word_vectors)}
     return data
 
 
@@ -171,8 +174,9 @@ def generate_ldavis_data(data_path, model, idx_to_word, freqs, vocab_size):
     vis_data = prepare_topics(doc_embed, topic_embed, word_embed, np.array(vocabulary), doc_lengths=doc_lengths,
                               term_frequency=freqs, normalize=True)
 
-    prepared_vis_data = pyLDAvis.prepare(**vis_data)
-    pyLDAvis.show(prepared_vis_data)
+    return vis_data
+    #prepared_vis_data = pyLDAvis.prepare(**vis_data)
+    #pyLDAvis.show(prepared_vis_data)
 
 def chunks(n, *args):
     """Yield successive n-sized chunks from l."""
