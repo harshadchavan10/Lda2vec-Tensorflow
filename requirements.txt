@@ -6,3 +6,4 @@ tensorflow==1.13.1
 pyLDAvis==2.1.2
 Keras==2.2.4
 tqdm==4.31.1
+spacy==1.9.0
