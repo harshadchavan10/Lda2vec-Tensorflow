@@ -1,6 +1,7 @@
 lda2vec.egg-info/
 *__pycache__/
 dist/
+.idea/*
 
 tests/twenty_newsgroups/logdir*
 tests/twenty_newsgroups/data*
@@ -10,3 +11,7 @@ lda2vec/Lda2vec_supervised.py
 lda2vec/Lda2vec_supervised_v2.py
 lda2vec/seq_utils.py
 tests/supervised_twenty_newsgroups/
+
+tests/webhose_50k/data/*
+tests/webhose_50k/glove_embeddings/*
+tests/webhose_50k/model/*
