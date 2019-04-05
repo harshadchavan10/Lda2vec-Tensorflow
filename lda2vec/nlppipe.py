@@ -42,7 +42,7 @@ class Preprocessor:
 
 
     def clean(self, line):
-        return ' '.join(w for w in line.split() if not any(t in w for t in self.bad))
+        return ' '.join(w for w in line.split() if not any(t in w for t in self.bad) and str(w).isalpha())
 
     def tokenize_and_process(self):
 
@@ -82,7 +82,7 @@ class Preprocessor:
         # This chunk handles removing words with counts less than min_count
         if self.min_count != None:
             # Get all the words to remove
-            words_to_rm = [w for w,c in self.tokenizer.word_counts.items() if c < self.min_count or not str(w).isalpha()]
+            words_to_rm = [w for w,c in self.tokenizer.word_counts.items() if c < self.min_count ]
             print("Removing {0} low frequency tokens out of {1} total tokens".format(len(words_to_rm), len(self.tokenizer.word_counts)))
             # Iterate over those words and remove them from the necessary Tokenizer attributes
             for w in words_to_rm:
