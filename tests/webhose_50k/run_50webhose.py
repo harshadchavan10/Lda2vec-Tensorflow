@@ -30,7 +30,7 @@ embed_size = embed_matrix.shape[1] if load_embeds else 128
 # Number of topics to cluster into
 num_topics = 20
 # Amount of iterations over entire dataset
-num_epochs = 10
+num_epochs = 1
 # Batch size - Increase/decrease depending on memory usage
 batch_size = 500
 # Epoch that we want to "switch on" LDA loss
@@ -50,7 +50,6 @@ m = model(num_docs,
           freqs=freqs,
           batch_size = batch_size,
           save_graph_def=save_graph,
-          fixed_words=True,
           logdir=model_dir)
 
 # Train the model
