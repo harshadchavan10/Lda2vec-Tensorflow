@@ -5,10 +5,15 @@ from lda2vec import utils, model
 import numpy as np
 
 # Path to preprocessed data
-clean_data_dir = "tests/webhose_50k/data/clean_data"
+clean_data_dir = "tests/webhose_50k/data/clean_data/v3"
 
 #Model Path
-model_dir = "tests/webhose_50k/model/v1"
+model_dir = "tests/webhose_50k/model/v3"
+
+MODEL_RESTORE = False
+
+if os.path.exists("{}/model.ckpt.meta".format(model_dir)):
+    MODEL_RESTORE = True
 
 if not os.path.exists(model_dir):
     os.makedirs(model_dir)
@@ -28,11 +33,11 @@ vocab_size = len(freqs)
 # If not loading embeds, change 128 to whatever size you want.
 embed_size = embed_matrix.shape[1] if load_embeds else 128
 # Number of topics to cluster into
-num_topics = 20
+num_topics = 15
 # Amount of iterations over entire dataset
-num_epochs = 1
+num_epochs = 75
 # Batch size - Increase/decrease depending on memory usage
-batch_size = 500
+batch_size = 512
 # Epoch that we want to "switch on" LDA loss
 switch_loss_epoch = 0
 # Pretrained embeddings value
@@ -50,6 +55,7 @@ m = model(num_docs,
           freqs=freqs,
           batch_size = batch_size,
           save_graph_def=save_graph,
+          restore=MODEL_RESTORE,
           logdir=model_dir)
 
 # Train the model

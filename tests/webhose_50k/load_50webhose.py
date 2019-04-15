@@ -15,7 +15,7 @@ raw_data_dir ="tests/webhose_50k/data/raw_data"
 glove_path = "tests/webhose_50k/glove_embeddings/glove.6B.300d.txt"
 
 # Preprocessed data location
-clean_data_dir = "tests/webhose_50k/data/clean_data"
+clean_data_dir = "tests/webhose_50k/data/clean_data/v3"
 
 # Should we load pretrained embeddings from file
 load_embeds = True
@@ -36,7 +36,7 @@ if not os.path.exists("{}/train.csv".format(clean_data_dir)):
 
     shuffle(clean_row_list)
 
-    train_set = clean_row_list[:10000]
+    train_set = clean_row_list[:5000]
     test_set = clean_row_list[45000:]
 
     # Create a df for Pre processor to consume

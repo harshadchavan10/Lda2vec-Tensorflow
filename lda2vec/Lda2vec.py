@@ -5,6 +5,7 @@ import lda2vec.embedding_mixture as M
 import lda2vec.dirichlet_likelihood as DL
 from lda2vec import utils
 from datetime import datetime
+from tqdm import tqdm
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -193,7 +194,7 @@ class Lda2vec:
 
 
     def train(self, pivot_words, target_words, doc_ids, data_size, num_epochs, switch_loss_epoch=0,
-              save_every=1, report_every=1, print_topics_every=5, idx_to_word=None):
+              save_every=1, report_every=1, print_topics_every=1, idx_to_word=None):
         """Train the Lda2vec Model. pivot_words, target_words, and doc_ids should be
         the same size.
         
@@ -226,14 +227,14 @@ class Lda2vec:
             # Initialize a tensorflow Saver object
             saver = tf.train.Saver()
             # Initialize a tensorflow summary writer so we can save logs
-            writer = tf.summary.FileWriter(self.logdir + '/', graph=self.sesh.graph)
+            # writer = tf.summary.FileWriter(self.logdir + '/', graph=self.sesh.graph)
 
         # Iterate over the number of epochs we want to train for
         for e in range(num_epochs):
             print('\nEPOCH:', e + 1)
             print("Started: {}".format(str(datetime.now())))
             # Get a batch worth of data
-            for p, t, d in utils.chunks(self.batch_size, pivot_words, target_words, doc_ids):
+            for p, t, d in tqdm(utils.chunks(self.batch_size, pivot_words, target_words, doc_ids)):
                 
                 # Create the feed dict from the batched data
                 feed_dict = {self.x: p, self.y: t, self.docs: d}
@@ -251,11 +252,11 @@ class Lda2vec:
 
             # Saves model every "save_every" epoch
             if (e+1) % save_every == 0 and self.save_graph_def:
-                writer.add_summary(summary, step)
-                writer.flush()
-                writer.close()
+                #writer.add_summary(summary, step)
+                #writer.flush()
+                #writer.close()
                 save_path = saver.save(self.sesh, self.logdir + '/model.ckpt')
-                writer = tf.summary.FileWriter(self.logdir + '/', graph=self.sesh.graph)
+                #writer = tf.summary.FileWriter(self.logdir + '/', graph=self.sesh.graph)
             
             # Prints out membership of words in each topic every "print_topics_every" epoch
             if e>0 and (e+1)%print_topics_every==0:
@@ -266,9 +267,9 @@ class Lda2vec:
 
         # Save after all epochs are finished, but only if we didn't just save
         if self.save_graph_def and (e+1) % save_every != 0:
-            writer.add_summary(summary, step)
-            writer.flush()
-            writer.close()        
+            #writer.add_summary(summary, step)
+            #writer.flush()
+            #writer.close()        
             save_path = saver.save(self.sesh, self.logdir + '/model.ckpt')
 
     def compute_normed_embeds(self):

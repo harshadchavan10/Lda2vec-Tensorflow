@@ -7,10 +7,10 @@ from sklearn.metrics.pairwise import cosine_similarity
 from numpy.linalg import norm
 
 # Path to preprocessed data
-clean_data_dir = "tests/webhose_50k/data/clean_data"
+clean_data_dir = "tests/webhose_50k/data/clean_data/v2"
 
 #Model Path
-model_dir = "tests/webhose_50k/model/v1"
+model_dir = "tests/webhose_50k/model/v2"
 
 #Pre-Trained Glove Embedding Location
 glove_path = "tests/webhose_50k/glove_embeddings/glove.6B.300d.txt"
@@ -18,10 +18,6 @@ glove_path = "tests/webhose_50k/glove_embeddings/glove.6B.300d.txt"
 #Load word to ID mapping
 with open("{}/word_to_idx.pickle".format(clean_data_dir), "rb") as w2i_in:
     word_to_idx = pickle.load(w2i_in)
-
-print(word_to_idx["1.75"])
-
-exit()
 
 #Load Initial Embedding matrix
 embed_matrix = np.load("{}/embedding_matrix.npy".format(clean_data_dir))
