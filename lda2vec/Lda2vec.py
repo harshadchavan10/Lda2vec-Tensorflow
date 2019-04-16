@@ -14,7 +14,7 @@ class Lda2vec:
 
     def __init__(self, num_unique_documents, vocab_size, num_topics, freqs=None, 
                  save_graph_def=True, embedding_size=128, num_sampled=40,
-                 learning_rate=0.001, lmbda=200.0, alpha=None, power=0.75, batch_size=500, logdir='logdir',
+                 learning_rate=0.1, lmbda=200.0, alpha=None, power=0.75, batch_size=500, logdir='logdir',
                  restore=False, fixed_words=False, factors_in=None, pretrained_embeddings=None):
         """Summary
         
@@ -146,6 +146,7 @@ class Lda2vec:
 
         # Global Step
         step = tf.Variable(0, trainable=False, name='global_step')
+        #step = tf.Print(step, [step])
         # What epoch should we switch on lda loss?
         switch_loss = tf.Variable(0, trainable=False)
         # Word embedding lookup
@@ -177,7 +178,7 @@ class Lda2vec:
             optimizer = tf.contrib.layers.optimize_loss(loss,
                                                         tf.train.get_global_step(),
                                                         self.learning_rate,
-                                                        'Adam',
+                                                        optimizer=tf.train.AdamOptimizer,
                                                         name='Optimizer')
         
         # Initialize all variables
@@ -215,11 +216,17 @@ class Lda2vec:
         temp_fraction = self.batch_size * 1.0 / data_size
         # Assign the fraction placeholder variable with the value we calculated
         self.sesh.run(tf.assign(self.fraction, temp_fraction))
+        print(self.batch_size)
+        print(data_size)
+        print(int(data_size / self.batch_size))
+        print(np.ceil(data_size % self.batch_size))
 
         # Calculate the number of iterations per epoch so we can figure out when to switch the loss
-        iters_per_epoch = int(data_size / self.batch_size) + np.ceil(data_size % self.batch_size)
+        iters_per_epoch = int(np.ceil(data_size / self.batch_size)) # + np.ceil(data_size % self.batch_size)
         # Calculate what step we would be on @ the switch loss epoch
         switch_loss_step = iters_per_epoch * switch_loss_epoch
+        print(switch_loss_step)
+        print(iters_per_epoch)
         # Assign the switch loss variable with the step we just calculated
         self.sesh.run(tf.assign(self.switch_loss, switch_loss_step))
 
@@ -233,8 +240,9 @@ class Lda2vec:
         for e in range(num_epochs):
             print('\nEPOCH:', e + 1)
             print("Started: {}".format(str(datetime.now())))
+            i = 0
             # Get a batch worth of data
-            for p, t, d in tqdm(utils.chunks(self.batch_size, pivot_words, target_words, doc_ids)):
+            for p, t, d in utils.chunks(self.batch_size, pivot_words, target_words, doc_ids):
                 
                 # Create the feed dict from the batched data
                 feed_dict = {self.x: p, self.y: t, self.docs: d}
@@ -242,12 +250,18 @@ class Lda2vec:
                 # Values we want to fetch whenever we run the model
                 fetches = [self.merged, self.optimizer, self.loss,
                            self.loss_word2vec, self.loss_lda, self.step]
-                
+
                 # Run a step of the model
                 summary, _, l, lw2v, llda, step = self.sesh.run(fetches, feed_dict=feed_dict)
 
+                i += 1
+                if i % 100 == 0:
+                    print(step)
+                    print('LOSS', l, 'w2v', lw2v, 'lda', llda)
+
             # Prints log every "report_every" epoch
             if (e+1) % report_every == 0:
+                print(step)
                 print('LOSS', l, 'w2v', lw2v, 'lda', llda)
 
             # Saves model every "save_every" epoch

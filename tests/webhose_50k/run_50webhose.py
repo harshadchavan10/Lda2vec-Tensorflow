@@ -35,16 +35,17 @@ embed_size = embed_matrix.shape[1] if load_embeds else 128
 # Number of topics to cluster into
 num_topics = 15
 # Amount of iterations over entire dataset
-num_epochs = 75
+num_epochs = 5
 # Batch size - Increase/decrease depending on memory usage
-batch_size = 512
+batch_size = 8192
 # Epoch that we want to "switch on" LDA loss
-switch_loss_epoch = 0
+switch_loss_epoch = 2
 # Pretrained embeddings value
 pretrained_embeddings = embed_matrix if load_embeds else None
 # If True, save logdir, otherwise don't
 save_graph = True
 
+print(str(len(pivot_ids)))
 
 # Initialize the model
 m = model(num_docs,
